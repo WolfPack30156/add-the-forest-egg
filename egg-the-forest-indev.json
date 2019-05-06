@@ -1,0 +1,81 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
+    "meta": {
+        "version": "PTDL_v1"
+    },
+    "exported_at": "2019-05-06T22:44:45+01:00",
+    "name": "The Forest [indev]",
+    "author": "brandonjohnflick@gmail.com",
+    "description": "An egg made by the ZereneGaming Network Community to better host The Forest on the Pterodactyl Panel.\r\n\r\nInspired by the attempt by TeamWuffy on the github: https:\/\/gist.github.com\/NgLoader\/496b33e360d531826976a5a1e932b57d\r\n\r\nWe took this original JSON and attempted to launch it; however, it failed so we started to put our thinking caps on and fixed it and brought it up to a point where it runs the server and we can connect to it. \r\n\r\nWe are working on adding feature benefits to this egg versus just a direct copy from TeamWuffy as to allow admins and users of other panels to implement this to their panels.",
+    "image": "quay.io\/ngloader\/wine-steam:ubuntu_steamcmd-wine",
+    "startup": "\"xvfb-run --auto-servernum --server-args='-screen 0 640x480x24:32' wine .\/TheForestDedicatedServer.exe -batchmode -nographics -savefolderpath \\\"\/games\/data\/forest\/saves\\\" -configfilepath \\\"Server.cfg\\\"\"",
+    "config": {
+        "files": "{\r\n    \"Server.cfg\": {\r\n        \"parser\": \"properties\",\r\n        \"find\": {\r\n            \"serverSteamPort\": \"{{server.build.env.STEAM_PORT}}\",\r\n            \"serverGamePort\": \"{{server.build.env.GAME_PORT}}\",\r\n            \"serverQueryPort\": \"{{server.build.env.QUERY_PORT}}\",\r\n            \"serverName\": \"{{server.build.env.SERVER_NAME}}\",\r\n            \"serverPassword\": \"{{server.build.env.SERVER_PASSWORD}}\",\r\n            \"serverPasswordAdmin\": \"{{server.build.env.SEVER_ADMIN_PASSWORD}}\"\r\n        }\r\n    }\r\n}",
+        "startup": "{\r\n    \"done\": \"Game autosave started\",\r\n    \"userInteraction\": []\r\n}",
+        "logs": "{\r\n    \"custom\": true,\r\n    \"location\": \"logs\/latest.log\"\r\n}",
+        "stop": "^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!\/bin\/bash\r\n# The Forest Installation Script\r\n#\r\n# Server Files: \/mnt\/server\r\n\r\n#Updateing and installing packages\r\n## ZGN\r\n#Added xvfb to server preflight to ensure installation for server run\r\n#Added winetricks to server preflight to ensure installation for server run\r\napt -y update\r\napt -y --install-recommends install curl wget software-properties-common ca-certificates lib32gcc1 winetricks xvfb\r\napt -y update && apt -y upgrade\r\n\r\ncd \/tmp\r\ncurl -sSL -o steamcmd.tar.gz http:\/\/media.steampowered.com\/installer\/steamcmd_linux.tar.gz\r\n\r\nmkdir -p \/mnt\/server\/steamcmd\r\ntar -xzvf steamcmd.tar.gz -C \/mnt\/server\/steamcmd\r\ncd \/mnt\/server\/steamcmd\r\n\r\n# SteamCMD fails otherwise for some reason, even running as root.\r\n# This is changed at the end of the install process anyways.\r\nchown -R root:root \/mnt\r\n\r\nexport HOME=\/mnt\/server\r\n.\/steamcmd.sh +@sSteamCmdForcePlatformType windows +login anonymous +force_install_dir \/mnt\/server +app_update 556450 validate +quit\r\n\r\n#Create default config\r\ncat <<EOF >> \/mnt\/server\/Server.cfg\r\n\/\/ Dedicated Server Settings.\r\n\/\/ Server IP address - Note: If you have a router, this address is the internal address, and you need to configure ports forwarding\r\nserverIP 0.0.0.0\r\n\/\/ Steam Communication Port - Note: If you have a router you will need to open this port.\r\nserverSteamPort {{STEAM_PORT}}\r\n\/\/ Game Communication Port - Note: If you have a router you will need to open this port.\r\nserverGamePort {{GAME_PORT}}\r\n\/\/ Query Communication Port - Note: If you have a router you will need to open this port.\r\nserverQueryPort {{QUERY_PORT}}\r\n\/\/ Server display name\r\nserverName {{SERVER_NAME}}\r\n\/\/ Maximum number of players\r\nserverPlayers 4\r\n\/\/ Enable VAC (Valve Anti-cheat System at the server. Must be set off or on\r\nenableVAC on\r\n\/\/ Server password. blank means no password\r\nserverPassword {{SERVER_PASSWORD}}\r\n\/\/ Server administration password. blank means no password\r\nserverPasswordAdmin {{SERVER_ADMIN_PASSWORD}}\r\n\/\/ Your Steam account name. blank means anonymous\r\nserverSteamAccount \r\n\/\/ Time between server auto saves in minutes - The minumum time is 15 minutes, the default time is 30\r\nserverAutoSaveInterval 30\r\n\/\/ Game difficulty mode. Must be set to Peaceful Normal or Hard\r\ndifficulty Normal\r\n\/\/ New or continue a game. Must be set to New or Continue\r\ninitType Continue\r\n\/\/ Slot to save the game. Must be set 1 2 3 4 or 5\r\nslot 1\r\n\/\/ Show event log. Must be set off or on\r\nshowLogs off\r\n\/\/ Contact email for server admin\r\nserverContact unknown@unknown.unknown\r\n\/\/ No enemies\r\nveganMode off\r\n\/\/ No enemies during day time\r\nvegetarianMode off\r\n\/\/ Reset all structure holes when loading a save\r\nresetHolesMode off\r\n\/\/ Regrow 10% of cut down trees when sleeping\r\ntreeRegrowMode on\r\n\/\/ Allow building destruction\r\nallowBuildingDestruction on\r\n\/\/ Allow enemies in creative games\r\nallowEnemiesCreativeMode off\r\n\/\/ Allow clients to use the built in debug console\r\nallowCheats off\r\n\/\/ Allows defining a custom folder for save slots, leave empty to use the default location\r\nsaveFolderPath\r\n\/\/ Target FPS when no client is connected\r\ntargetFpsIdle 5\r\n\/\/ Target FPS when there is at least one client connected\r\ntargetFpsActive 60\r\nEOF",
+            "container": "ubuntu:18.10",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "serverSteamPort",
+            "description": "Port server is listening for steam",
+            "env_variable": "STEAM_PORT",
+            "default_value": "8766",
+            "user_viewable": 1,
+            "user_editable": 1,
+            "rules": "required|numeric|max:65535"
+        },
+        {
+            "name": "serverGamePort",
+            "description": "Port server is listening for game traffic",
+            "env_variable": "GAME_PORT",
+            "default_value": "27015",
+            "user_viewable": 1,
+            "user_editable": 1,
+            "rules": "required|string|max:65535"
+        },
+        {
+            "name": "serverQueryPort",
+            "description": "Port Server is listening for queries. Usually is Game_Port+1",
+            "env_variable": "QUERY_PORT",
+            "default_value": "27016",
+            "user_viewable": 1,
+            "user_editable": 1,
+            "rules": "required|string|max:65535"
+        },
+        {
+            "name": "serverName",
+            "description": "Name server advertises in server query browser.",
+            "env_variable": "SERVER_NAME",
+            "default_value": "The Forest Game",
+            "user_viewable": 1,
+            "user_editable": 1,
+            "rules": "required|string|max:255"
+        },
+        {
+            "name": "serverPassword",
+            "description": "Password For server, blank is no password.",
+            "env_variable": "SERVER_PASSWORD",
+            "default_value": "",
+            "user_viewable": 1,
+            "user_editable": 1,
+            "rules": "string|max:20"
+        },
+        {
+            "name": "serverPasswordAdmin",
+            "description": "Admin Password for Server Admin Access. Used for when `developermodeon` is entered in the main menu before connection to server.",
+            "env_variable": "SERVER_ADMIN_PASSWORD",
+            "default_value": "",
+            "user_viewable": 0,
+            "user_editable": 0,
+            "rules": "nullable|string|max:20"
+        }
+    ]
+}
